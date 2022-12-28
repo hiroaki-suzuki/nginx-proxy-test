@@ -1,0 +1,29 @@
+version: "3.9"
+services:
+    proxy-onp:
+        image: httpd:2.4.54
+        ports:
+            - "8080:80"
+        volumes:
+            - "./httpd-onp.conf:/usr/local/apache2/conf/httpd.conf"
+        environment:
+            TZ: Asia/Tokyo
+    proxy-httpd:
+        image: httpd:2.4.54
+        ports:
+            - "8081:80"
+        volumes:
+            - "./httpd.conf:/usr/local/apache2/conf/httpd.conf"
+        environment:
+            TZ: Asia/Tokyo
+    proxy-nginx:
+        build:
+            context: ./nginx
+            dockerfile: Dockerfile
+        ports:
+            - "3128:3128"
+        volumes:
+            - "./nginx/nginx.conf:/etc/nginx/nginx.conf"
+            - "./nginx/default.conf:/etc/nginx/conf.d/defaust.conf"
+        environment:
+            TZ: Asia/Tokyo

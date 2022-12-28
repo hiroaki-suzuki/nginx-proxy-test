@@ -1,0 +1,29 @@
+FROM nginx:1.23.3-alpine AS builder
+
+ARG NGINX_VERSION=1.23.3
+ARG CONNECT_VERSION=0.0.4
+ARG PACHER_VERSION=proxy_connect_rewrite_102101
+
+RUN apk add --no-cache --virtual .build-deps \
+    gcc libc-dev make openssl-dev pcre-dev zlib-dev linux-headers \
+    libxslt-dev gd-dev geoip-dev perl-dev libedit-dev mercurial alpine-sdk findutils
+
+WORKDIR /tmp
+
+RUN curl -L "http://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz" -o nginx.tar.gz && \
+    curl -L "https://github.com/chobits/ngx_http_proxy_connect_module/archive/v${CONNECT_VERSION}.tar.gz" -o ngx_http_proxy_connect_module.tar.gz && \ 
+    tar zxvf nginx.tar.gz && \ 
+    tar zxvf ngx_http_proxy_connect_module.tar.gz
+
+WORKDIR /tmp/nginx-${NGINX_VERSION}
+RUN patch -p1 < "../ngx_http_proxy_connect_module-${CONNECT_VERSION}/patch/${PACHER_VERSION}.patch" && \
+    CONFARGS=$(nginx -V 2>&1 | sed -n -e 's/^.*arguments: //p') && \
+    CONFARGS=${CONFARGS/-Os -fomit-frame-pointer/-Os} && \
+    echo $CONFARGS
+RUN ./configure --with-compat $CONFARGS --add-dynamic-module=../ngx_http_proxy_connect_module-${CONNECT_VERSION}/ 
+RUN make && make install
+
+FROM nginx:1.23.3-alpine
+COPY --from=builder /usr/local/nginx/modules/ngx_http_proxy_connect_module.so /usr/local/nginx/modules/
+COPY --from=builder /usr/sbin/nginx /usr/sbin/nginx
+CMD ["nginx", "-g", "daemon off;"]
