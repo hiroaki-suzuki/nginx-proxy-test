@@ -21,9 +21,9 @@ services:
             context: ./nginx
             dockerfile: Dockerfile
         ports:
-            - "3128:3128"
+            - "3128:80"
         volumes:
             - "./nginx/nginx.conf:/etc/nginx/nginx.conf"
-            - "./nginx/default.conf:/etc/nginx/conf.d/defaust.conf"
+            - "./nginx/default.conf:/etc/nginx/conf.d/default.conf"
         environment:
             TZ: Asia/Tokyo
